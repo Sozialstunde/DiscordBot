@@ -12,11 +12,14 @@ import psutil
 import sentry_sdk
 import sys
 import time
-from CustomModules.app_translation import Translator as CustomTranslator
+#from CustomModules.app_translation import Translator as CustomTranslator
 from datetime import timedelta, datetime
 from dotenv import load_dotenv
 from typing import Optional, Any
 from zipfile import ZIP_DEFLATED, ZipFile
+
+from CustomModules.youtube_modul import download_mp4
+
 
 
 
@@ -34,8 +37,10 @@ sentry_sdk.init(
     profiles_sample_rate=1.0,
     environment='Production'
 )
-app_folder_name = 'BOTFOLDER'
-bot_name = 'BOTNAME'
+
+app_folder_name = 'Nicos Bot_Folder'
+bot_name = 'Nicos Bot'
+
 if not os.path.exists(f'{app_folder_name}//Logs'):
     os.makedirs(f'{app_folder_name}//Logs')
 if not os.path.exists(f'{app_folder_name}//Buffer'):
@@ -43,7 +48,7 @@ if not os.path.exists(f'{app_folder_name}//Buffer'):
 log_folder = f'{app_folder_name}//Logs//'
 buffer_folder = f'{app_folder_name}//Buffer//'
 activity_file = os.path.join(app_folder_name, 'activity.json')
-bot_version = "1.0.0"
+bot_version = "1.0.1"
 
 #Logger init
 logger = logging.getLogger('discord')
@@ -88,8 +93,8 @@ class JSONValidator:
 
     default_content = {
         "activity_type": "Playing",
-        "activity_title": "Made by Serpensin: https://gitlab.bloodygang.com/Serpensin",
-        "activity_url": "",
+        "activity_title": "Discord Bot geschrieben von Zaros",
+        "activity_url": "https://www.youtube.com/watch?v=51fCbZd-dbE",
         "status": "online"
     }
 
@@ -266,7 +271,7 @@ class aclient(discord.AutoShardedClient):
         logger.info(f'Logged in as {bot.user} (ID: {bot.user.id})')
         if not self.synced:
             manlogger.info('Syncing...')
-            await tree.set_translator(CustomTranslator())
+            #await tree.set_translator(CustomTranslator())
             await tree.sync()
             manlogger.info('Synced.')
             self.synced = True
@@ -483,49 +488,48 @@ class Owner():
 
 ##Bot Commands
 #Ping
-@tree.command(name = 'ping', description = 'Test, if the bot is responding.')
-@discord.app_commands.checks.cooldown(1, 30, key=lambda i: (i.user.id))
+@tree.command(name = 'ping', description = 'Testet die Antwort Zeit des Bots.')
+@discord.app_commands.checks.cooldown(1, 5, key=lambda i: (i.user.id))
 async def self(interaction: discord.Interaction):
     before = time.monotonic()
     await interaction.response.send_message('Pong!')
     ping = (time.monotonic() - before) * 1000
-    await interaction.edit_original_response(content=f'Pong! \nCommand execution time: `{int(ping)}ms`\nPing to gateway: `{int(bot.latency * 1000)}ms`')
+    await interaction.edit_original_response(content=f'Dauer des Befehls: `{int(ping)}ms`\nPing zum gateway: `{int(bot.latency * 1000)}ms`')
 
 
 #Bot Info
-@tree.command(name = 'botinfo', description = 'Get information about the bot.')
-@discord.app_commands.checks.cooldown(1, 60, key=lambda i: (i.user.id))
+@tree.command(name = 'botinfo', description = 'Informationen ueber denn Bot.')
+@discord.app_commands.checks.cooldown(1, 5, key=lambda i: (i.user.id))
 async def self(interaction: discord.Interaction):
     member_count = sum(guild.member_count for guild in bot.guilds)
 
     embed = discord.Embed(
-        title=f"Informationen about {bot.user.name}",
+        title=f"Informationen ueber denn Bot: {bot.user.name}",
         color=discord.Color.blue()
     )
     embed.set_thumbnail(url=bot.user.avatar.url if bot.user.avatar else '')
 
-    embed.add_field(name="Created at", value=bot.user.created_at.strftime("%d.%m.%Y, %H:%M:%S"), inline=True)
+    embed.add_field(name="Erstellt am", value=bot.user.created_at.strftime("%d.%m.%Y, %H:%M:%S"), inline=True)
     embed.add_field(name="Bot-Version", value=bot_version, inline=True)
-    embed.add_field(name="Uptime", value=str(timedelta(seconds=int((datetime.now() - start_time).total_seconds()))), inline=True)
+    embed.add_field(name="Laufzeit", value=str(timedelta(seconds=int((datetime.now() - start_time).total_seconds()))), inline=True)
 
     embed.add_field(name="Bot-Owner", value=f"<@!{ownerID}>", inline=True)
     embed.add_field(name="\u200b", value="\u200b", inline=True)
     embed.add_field(name="\u200b", value="\u200b", inline=True)
 
     embed.add_field(name="Server", value=f"{len(bot.guilds)}", inline=True)
-    embed.add_field(name="Member count", value=str(member_count), inline=True)
+    embed.add_field(name="Member Zahl", value=str(member_count), inline=True)
     embed.add_field(name="\u200b", value="\u200b", inline=True)
 
     embed.add_field(name="Shards", value=f"{bot.shard_count}", inline=True)
     embed.add_field(name="Shard ID", value=f"{interaction.guild.shard_id if interaction.guild else 'N/A'}", inline=True)
-    embed.add_field(name="\u200b", value="\u200b", inline=True)
+    #embed.add_field(name="\u200b", value="\u200b", inline=True)
 
-    embed.add_field(name="Python-Version", value=f"{platform.python_version()}", inline=True)
-    embed.add_field(name="discord.py-Version", value=f"{discord.__version__}", inline=True)
-    embed.add_field(name="Sentry-Version", value=f"{sentry_sdk.consts.VERSION}", inline=True)
+    embed.add_field(name="Python-Version", value=f"HIDDEN", inline=True) #value=f"{platform.python_version()}", inline=True)
+    #embed.add_field(name="discord.py-Version", value=f"{discord.__version__}", inline=True)
+    embed.add_field(name="Sentry-Version", value=f"HIDDEN", inline=True) #"{sentry_sdk.consts.VERSION}", inline=True)
 
-    embed.add_field(name="Repo", value=f"[GitLab](https://gitlab.bloodygang.com/Serpensin/Discord-Bot-Base)", inline=True)
-    embed.add_field(name="Invite", value=f"[Invite me](https://discord.com/api/oauth2/authorize?client_id={bot.user.id}&permissions=8&scope=bot)", inline=True)
+    embed.add_field(name="Einladen", value=f"[Lade mich ein](https://discord.com/api/oauth2/authorize?client_id={bot.user.id}&permissions=8&scope=bot)", inline=True)
     embed.add_field(name="\u200b", value="\u200b", inline=True)
 
     if interaction.user.id == int(ownerID):
@@ -553,8 +557,44 @@ async def self(interaction: discord.Interaction, nick: str):
 
 
 
+@tree.command(name = 'play', description = 'Spielt Musik.')
+#@discord.app_commands.checks.cooldown(1, 5, key=lambda i: (i.guild_id))
+@discord.app_commands.describe(url='URL der Musik.')
+async def self(interaction: discord.Interaction, url: str):
 
+    #await interaction.response.send_message(f'Ich spiele jetzt **{url}**.', ephemeral=True)
+    if not interaction.user.voice:
+        await interaction.response.send_message('Du bist in keinem Voice-Channel.', ephemeral=True)
+        return
+    else:
+        channel = interaction.user.voice.channel
+        
+    url = url.strip()
+        
+    try:
+        await channel.connect()
+        #Should play the mp4 file but in mp3
+        format = 'mp3'
+        #await interaction.response.send_message(f'Ich spiele jetzt **{url}**.', ephemeral=True)
+    except:
+        voice_channel = interaction
+    
 
+    server = interaction.guild
+    voice_channel = server.voice_client
+
+    download_mp4(url, f'{buffer_folder} youtube_downloads')
+    
+
+    for file in os.listdir(f'{buffer_folder} youtube_downloads'):
+        if file.endswith(".mp4"):
+            os.rename(f'{buffer_folder} youtube_downloads//{file}', f'{buffer_folder} youtube_downloads//{file[:-4]}.{format}')
+            file = file[:-4] + '.' + format
+            voice_channel.play(discord.FFmpegPCMAudio(f'{buffer_folder} youtube_downloads//{file}'))
+            while voice_channel.is_playing():
+                await asyncio.sleep(1)
+            
+            os.remove(f'{buffer_folder}/youtube_downloads/{file}')
 
 if __name__ == '__main__':
     if not TOKEN:
@@ -571,3 +611,4 @@ if __name__ == '__main__':
         except asyncio.CancelledError:
             if shutdown:
                 pass
+

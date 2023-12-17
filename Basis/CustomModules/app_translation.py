@@ -7,7 +7,7 @@ class Translator(discord.app_commands.Translator):
         self.translations = {
             discord.Locale.german: {
                 "Test, if the bot is responding.": "Teste, ob der Bot antwortet.",
-                "Get information about the bot.": "Erhalte Informationen über den Bot.",
+                "Get information about the bot.": "Erhalte Informationen ueber den Bot.",
                 "change_nickname": "nickname_ändern",
                 },
             discord.Locale.japanese: {
